@@ -61,6 +61,8 @@ class DatabaseManagement(object):
 		for line in query:
 			responseObject.append(line)
 
+		print(responseObject);
+
 		return responseObject
 
 	def downloadDatabase():

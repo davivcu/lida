@@ -615,8 +615,10 @@ async function login(loginName,loginPass) {
 
   const apiLink = API_LINK+`/login/${loginName}/${loginPass}`;
 
+  console.log(window.location.host);
+  
   try {
-
+	
     var response = await axios.post(apiLink, loginName, loginPass);
 
     console.log(response);
