@@ -30,14 +30,13 @@ from bson.objectid import ObjectId
 
 class DatabaseConfiguration:
 
-#	databaseLocation = "localhost" 
-#	databasePort = 27017
+	databaseURL="mongodb://localhost"
+#	databaseURL="mongodb+srv://augusto:asterix@cluster0-wyaud.mongodb.net/mymongodb?retryWrites=true&w=majority"
 
-#	client = MongoClient(databaseLocation,databasePort)
-#	db = client.mymongodb
+	db = MongoClient(databaseURL).mymongodb
 	print("Connecting to DB");
-	client = MongoClient("mongodb+srv://augusto:asterix@cluster0-wyaud.mongodb.net/<dbname>?retryWrites=true&w=majority")
-	db = client.mymongodb
+#	client = MongoClient("mongodb+srv://augusto:asterix@cluster0-wyaud.mongodb.net/<dbname>?retryWrites=true&w=majority")
+#	db = client.mymongodb
 	serverStatusResult=db.command("serverStatus")
 	pprint(serverStatusResult)
 	collection = db.lida_database
