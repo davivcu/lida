@@ -15,6 +15,7 @@
 .all-dialogues-container {
     overflow-y: scroll;
     padding-bottom: 50px;
+    background-color:#f1f1f3;
 }
 
 .all-dialogues-container .btn-set li:last-of-type {
@@ -181,6 +182,7 @@
     font-size: 10px;
     letter-spacing: 1px;
     padding:4px;
+    padding-bottom:2.5px;
     margin:13px 13px 10px 0px;
 }
 
@@ -188,7 +190,8 @@
     border: 1px solid red;
     color: red;
     font-size:9px;
-    margin:10px 10px 10px 0px;  
+    margin:10px 10px 10px 0px;
+    padding:3px 6px 3px 8px;
 }
 
 .dialogue-id {
@@ -342,8 +345,4 @@
             user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
     cursor: pointer
-}
-
-.entry-list-single-item-container {
-    grid-template: none !important;
 }

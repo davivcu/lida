@@ -193,10 +193,20 @@ class DialogueAnnotator(object):
         """
         self.set_dialogues( self.__SESSION_USER, dialogues )
         self.set_file( filePath, fileName )
-        self.addedDialogues = {}
-        self.addedDialogues[self.__SESSION_USER] = 0
-        self.trashcan = {}
-        self.trashcan[self.__SESSION_USER] = {}
+        
+        try:
+            self.addedDialogues
+            self.addedDialogues[self.__SESSION_USER] = 0
+        except:
+            self.addedDialogues = {}
+            self.addedDialogues[self.__SESSION_USER] = 0
+        
+        try: 
+            self.activeCollection
+            self.activeCollection[self.__SESSION_USER] = ""
+        except:
+            self.activeCollection = {}
+            self.activeCollection[self.__SESSION_USER] = ""
 
     #def get_file_name(self):
         """
@@ -237,7 +247,7 @@ class DialogueAnnotator(object):
             self.addedDialogues = {}
             self.addedDialogues[newName] = 0
 
-        print("\n * New session created for",newName,self.__dialogues[DialogueAnnotator.__SESSION_USER])
+        print("\n * Session requested for",newName,self.__dialogues[DialogueAnnotator.__SESSION_USER])
 
     def set_file( self, filePath, fileName=None ):
         """
@@ -285,11 +295,11 @@ class DialogueAnnotator(object):
                 collection = ""
 
             try:
-                annotated = self.__dialogues[DialogueAnnotator.__SESSION_USER][dialogueID][0]["annotated"]
+                status = self.__dialogues[DialogueAnnotator.__SESSION_USER][dialogueID][0]["status"]
             except:
-                annotated = "0%"
+                status = "0%"
 
-            metadata.append({"id": dialogueID, "num_turns": len(dialogueTurnList), "collection":collection, "annotated":annotated})
+            metadata.append({"id": dialogueID, "num_turns": len(dialogueTurnList), "collection":collection, "status":status})
 
         return metadata
 
@@ -324,6 +334,12 @@ class DialogueAnnotator(object):
 
         return True
 
+    def change_collection(self, user, fileName):
+
+        self.activeCollection[user] = fileName
+
+        print("* ",user,"started working on collection",fileName)
+
 
     def update_dialogue_name(self, user, id, newName):
         """
@@ -351,21 +367,6 @@ class DialogueAnnotator(object):
         if not id:
             id = self.__get_new_dialogue_id(user)
 
-        """ #verify if id exists before overwriting
-        if id:
-            try:
-                self.__dialogues[DialogueAnnotator.__SESSION_USER][ id ]
-                #print("Dialogue",id,"already exists!")
-                try: 
-                    self.trashcan[user][id] = copy.deepcopy(self.__dialogues[DialogueAnnotator.__SESSION_USER][id])
-                except:
-                    self.trashcan[user] = {}
-                    self.trashcan[user][id] = copy.deepcopy(self.__dialogues[DialogueAnnotator.__SESSION_USER][id])
-                overwritten = id
-            except:
-                pass
-        """
-
         #inserts in proper user workspace
         self.__dialogues[DialogueAnnotator.__SESSION_USER][ id ] = dialogue if dialogue else []
 
@@ -377,7 +378,7 @@ class DialogueAnnotator(object):
                 collectionTag = ""
 
         self.insert_meta_tags(user, id, "collection", collectionTag)
-        self.insert_meta_tags(user, id, "annotated", "0%")
+        self.insert_meta_tags(user, id, "status", "0%")
 
         self.save( user )
 
@@ -434,22 +435,6 @@ class DialogueAnnotator(object):
         # save_json_file( obj=self.__dialogues, path=self.__filePath )
 
         return newId
-
-    def recover_copies(self, user, dialogueList):
-
-        DialogueAnnotator.__SESSION_USER = user
-
-        result = []
-
-        for dialogue in dialogueList:
-            id = str(dialogue)
-            self.__dialogues[DialogueAnnotator.__SESSION_USER][ id ] = copy.deepcopy(self.trashcan[user][id])
-            collection = self.__dialogues[DialogueAnnotator.__SESSION_USER][ id ][0]["collection"]
-            self.insert_meta_tags(user, id, "collection", collection)
-            self.save( user )
-            result.append(dialogue)
-
-        return { "recovered": result }
 
 
     def clean_workspace(self, user):

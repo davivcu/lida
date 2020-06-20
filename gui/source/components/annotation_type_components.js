@@ -22,6 +22,10 @@ Vue.component('classification-annotation',{
     computed: {
         correctClassification : function(){
             console.log("Classification Computed");
+            if (this.classification.length > 0) {
+              //if turn already annotated, send event for annotation rate
+              annotationAppEventBus.$emit("turn_is_annotated", this.turn);
+            } 
             return this.classification
         }
     },
@@ -204,7 +208,7 @@ Vue.component('classification-annotation',{
 
 Vue.component('classification-string-annotation', {
 
-    props: ["classification_strings", "uniqueName", "classes", "info", "confidences"],
+    props: ["classification_strings", "uniqueName", "classes", "info", "confidences","currentId"],
 
     data () {
 
@@ -278,7 +282,7 @@ Vue.component('classification-string-annotation', {
           for (classStringTuple in this.classification_strings) {
 
               if (this.classification_strings[classStringTuple][0] == labelName) {
-
+                  console.log(this.classification_strings[classStringTuple][0]);
                   return this.classification_strings[classStringTuple][1]
 
               }
@@ -339,7 +343,7 @@ Vue.component('classification-string-annotation', {
           this.$forceUpdate();
 
           outEvent = {name: this.uniqueName, data: this.classification_strings}
-          annotationAppEventBus.$emit('classification_string_updated', outEvent)
+          annotationAppEventBus.$emit('classification_string_updated', outEvent);
 
       },
 
@@ -362,6 +366,7 @@ Vue.component('classification-string-annotation', {
          let labelName = activeLabel.title;
          let context = event.target.parentNode.parentNode.getElementsByClassName("user-string-type-name")[0].textContent;
          let text = event.target.value.substring(event.target.selectionStart, event.target.selectionEnd);
+
          //updating
          if ((text == undefined) || (text == "")) {
             annotationAppEventBus.$emit("resume_annotation_tools");
@@ -371,8 +376,7 @@ Vue.component('classification-string-annotation', {
          this.updateClassAndString(activeLabel, labelName);
          //put all back to place
          annotationAppEventBus.$emit("resume_annotation_tools");
-      }, 
-
+      },
     },
 
     template:
