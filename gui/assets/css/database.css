@@ -4,15 +4,14 @@
 ********************************************************************************
 *******************************************************************************/
 
-#database-view {
-    overflow-y: scroll;
-    padding-bottom:50px;
+#annotation-view {
+    overflow-y:scroll;
     background-color:#f1f1f3;
 }
 
 .database-menu {
     display:grid;
-    grid-template:[row1-start] "title-zone config-container help-button-zone" [row1-end] / 1fr 1.5fr 1fr;
+    grid-template:[row1-start] "title-zone name-zone help-button-zone" [row1-end] / 1fr 1.5fr 1fr;
     background: rgba(0,0,0,0.02);
     border-top: 1px solid #e6e6e6;
     border-bottom: 1px solid #e6e6e6;
@@ -54,7 +53,60 @@
     overflow: hidden;
 }
 
-.listed-entry {
+.annotation-list {
+    list-style-type: none;
+    margin-left: 0;
+    overflow: hidden;
+}
+
+.active-collection {
+    width: 49%;
+    float: left;
+    list-style-type: none;
+    margin-left: 0;
+    padding-left: 0;
+    margin: 0px 0px 15px 0px;
+}
+
+.active-collection .entry-list-single-item-container {
+    border-left:5px solid #259af7
+}
+
+.load {
+    color: red;
+    border: 1px solid red;
+    padding: 2px 2px 2px 4px;
+    font-size:10px;
+}
+
+.closing-list {
+    clear:both;
+}
+
+.collection-list .listed-entry {
+    margin: 10px 0;
+    color: white;
+    transition: ease 175ms all;
+    padding: 0 10px;
+    width:50%;
+    float:left;
+}
+
+.annotation-list .listed-entry {
+    margin: 10px 0;
+    color: white;
+    transition: ease 175ms all;
+    padding: 0px 0px;
+    width:unset;
+    float:none;
+}
+
+#annotation-view .entry-list-single-item-container {
+    display:block;
+    grid-template:none;
+}
+
+.listed-annotations {
     margin: 10px 0;
     color: white;
     transition: ease 175ms all;
@@ -73,7 +125,7 @@
 }
 
 #collection-view .entry-list-single-item-container {
-    border-left:5px solid #3a9dd6
+    border-left:5px solid #3a9dd6;
 }
 
 .listed-entry:hover .entry-list-single-item-container {
@@ -146,6 +198,24 @@
 }
 .entry-assigned span {
     font-weight: bold; 
+}
+
+.entry-done {
+    display: flex;
+    justify-content:flex-end;
+    font-weight:bold;
+    font-family: montserrat;
+    text-transform: uppercase;
+    font-size: 11px;
+    overflow: visible;
+    padding-left: 10px
+}
+
+.entry-done span {
+    font-weight:100;
+    color:red;
+    padding-left:5px;
+    padding-right:5px;
 }
 
 pre {

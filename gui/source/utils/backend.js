@@ -2,12 +2,7 @@
 * FILE NAME FUNCTIONS
 ********************************/
 
-url = window.location.href;
-if (url.split("/").pop() != "admin.html") {
-    var API_BASE = url;
-} else {
-    var API_BASE = url.split("/").splice(0,-1);
-}
+API_BASE = window.origin
 
 function session_name() {
     username = "user_1";
@@ -365,13 +360,33 @@ async function del_all_dialogues_async(admin) {
     }
 }
 
-async function recover_dialogues(collection) {
+async function recover_dialogues(doc) {
 
-const apiLink = API_BASE+"/"+session_name()+`/dialogues_recover/${collection}`
+const apiLink = API_BASE+"/"+session_name()+`/annotations_recover/${doc}`
 
     try {
 
-        var response = await axios.get(apiLink, collection)
+        var response = await axios.get(apiLink, doc)
+
+        console.log("=========== RECOVERY DONE ===========")
+        return response
+
+    } catch(error) {
+
+        console.log(error);
+        alert(guiMessages.selected.lida.connectionError)
+
+  }
+
+}
+
+async function load_dialogues(doc) {
+
+const apiLink = API_BASE+"/"+session_name()+`/annotations_load/${doc}`
+
+    try {
+
+        var response = await axios.put(apiLink, doc)
 
         console.log("=========== RECOVERY DONE ===========")
         return response
@@ -451,10 +466,12 @@ async function update_db(annotationRate, backup) {
 
   var entries_ids = {}
 
+  activecollection = mainApp.activeCollection;
+
   if (backup == true) {
-    var apiLink = API_BASE+"/"+session_name()+`/backup/${annotationRate}`
+    var apiLink = API_BASE+"/"+session_name()+`/backup/${activecollection}/${annotationRate}`
   } else {
-    var apiLink = API_BASE+"/"+session_name()+`/database/${annotationRate}`
+    var apiLink = API_BASE+"/"+session_name()+`/database/${activecollection}/${annotationRate}`
   }
 
   try {
@@ -554,17 +571,17 @@ async function get_all_entries_async() {
   }
 }
 
-async function login(loginName,loginPass) {
+async function login(loginName,loginPass,role) {
 
   console.log("Username inserted",loginName);
 
-  const apiLink = API_BASE+`/login/${loginName}/${loginPass}`;
+  const apiLink = API_BASE+`/login/${loginName}/${loginPass}/${role}`;
 
   console.log(window.location.host);
   
   try {
-	
-    var response = await axios.post(apiLink, loginName, loginPass);
+
+    var response = await axios.post(apiLink, loginName, loginPass, role);
 
     console.log(response);
 
@@ -584,11 +601,11 @@ async function login(loginName,loginPass) {
 *  COLLECTIONS RESOURCE
 ***************************************/
 
-async function get_collections_ids_async() {
+async function get_collections_ids_async(DBcollection) {
 
   entriesList = []
 
-  const apiLink = API_BASE+`/collections/ids`
+  const apiLink = API_BASE+`/collections/${DBcollection}/ids`
 
   try {
 
@@ -608,15 +625,39 @@ async function get_collections_ids_async() {
   }
 }
 
-async function get_collections_async() {
+async function get_collections_async(DBcollection) {
 
   entriesList = []
 
-  const apiLink = API_BASE+`/collections`
+  const apiLink = API_BASE+`/collections/${DBcollection}`
 
   try {
 
     var response = await axios.get(apiLink)
+
+    console.log(response)
+
+    entriesList = response.data
+
+    return entriesList
+
+  } catch(error) {
+
+    console.log(error);
+    alert(guiMessages.selected.lida.connectionError)
+
+  }
+}
+
+async function get_specific_collections(DBcollection,fields) {
+
+  entriesList = []
+
+  const apiLink = API_BASE+`/collections/${DBcollection}`
+
+  try {
+
+    var response = await axios.post(apiLink, {search:JSON.stringify(fields)})
 
     console.log(response)
 
@@ -634,10 +675,16 @@ async function get_collections_async() {
 
 async function update_collection_async(id, params, doc) {
 
-    doc = JSON.parse("{"+doc+"}");
-    params.document = doc
+    if (typeof(doc) != "string") {
+        doc = JSON.parse("{"+doc+"}");
+        params.document = doc
+    } else {
+        doc = "{"+doc+"}"
+    }
 
-    const apiLink = API_BASE+`/collections/${id}`
+    DBcollection = "dialogues_collections"
+
+    const apiLink = API_BASE+`/collections/${DBcollection}/${id}`
 
     try {
 
@@ -801,7 +848,7 @@ async function create_user(user,pass,role,email){
     var response = {}
 
     try {
-        var response = await axios.post( apiLink, { "user":user,"pass":pass, "role":role, "email":email } )
+        var response = await axios.post( apiLink, { "id":user,"userName":user,"password":pass, "role":role, "email":email } )
 
         response = response.data
         return response
@@ -831,6 +878,8 @@ backend =
     del_single_dialogue_async                   : del_single_dialogue_async,
     del_all_dialogues_async                     : del_all_dialogues_async,
     change_dialogue_name_async                  : change_dialogue_name_async,
+
+    load_dialogues                              : load_dialogues,
     recover_dialogues                           : recover_dialogues,
 
     post_empty_dialogue                         : post_empty_dialogue,
@@ -850,6 +899,7 @@ backend =
     update_collection_async                     : update_collection_async,
     get_collections_ids_async                   : get_collections_ids_async,
     get_collections_async                       : get_collections_async,
+    get_specific_collections                    : get_specific_collections,
 
     get_scores_async                            : get_scores_async,
     get_errors_async                            : get_errors_async,

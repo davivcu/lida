@@ -181,9 +181,9 @@ def handle_name_resource(user):
     return jsonify(responseObject)
 
 @LidaApp.route('/database', methods=['GET'])
-@LidaApp.route('/<user>/database/<annotationRate>',methods=['GET','PUT'])
+@LidaApp.route('/<user>/database/<activecollection>/<annotationRate>',methods=['GET','PUT'])
 @LidaApp.route('/database/<id>/<DBcollection>',methods=['GET','POST','DELETE'])
-def handle_database_resource(id=None, user=None, annotationRate=None, DBcollection=None):
+def handle_database_resource(id=None, user=None, annotationRate=None, DBcollection=None, activecollection=None):
     """
     GET - Gets the dialogues id in the database collection for the user
         or Gets an entire database document 
@@ -196,26 +196,26 @@ def handle_database_resource(id=None, user=None, annotationRate=None, DBcollecti
 
     """
     if not DBcollection:
-        DBcollection = "database"
+        DBcollection = "dialogues_collections"
 
     responseObject = {}
 
     if user:
         if request.method == "PUT":
-            responseObject = DatabaseManagement.updateDatabase( user, dialogueFile.activeCollection[user], annotationRate )
+            responseObject = DatabaseManagement.storeAnnotations( user, activecollection, annotationRate )
 
         #if request.method == "GET":
         #    responseObject = DatabaseManagement.getDatabaseIds()
 
     elif id:
         if request.method == "GET":
-            responseObject = DatabaseManagement.readDatabase(DBcollection,"_id",id)
+            responseObject = DatabaseManagement.readDatabase(DBcollection,{"id":id})
 
-        if request.method == "POST":
-            responseObject = DatabaseManagement.getUserEntry(id)
+        #if request.method == "POST":
+            #responseObject = DatabaseManagement.getUserEntry(id)
 
         if request.method == "DELETE":
-            responseObject.update( DatabaseManagement.deleteEntry(DBcollection, id ) )
+            responseObject.update( DatabaseManagement.deleteDoc(DBcollection, id ) )
 
     #else:
         #responseObject = DatabaseManagement.getDatabaseIds()
@@ -235,38 +235,48 @@ def handle_dialogues_tag(user, id, tag, value):
 
     return responseObject
 
-
-@LidaApp.route('/<user>/dialogues_recover/<collection>',methods=['GET'])
-def handle_recover_request(user, collection):
+@LidaApp.route('/<user>/annotations_load/<doc>',methods=['PUT'])
+@LidaApp.route('/<user>/annotations_recover/<doc>',methods=['GET'])
+def handle_switch_collection_request(user, doc):
 
     responseObject = {}
 
     #get collection document from database
-    doc = DatabaseManagement.readDatabase("dialogues","_id",collection)
+    if request.method == "PUT":
+        
+        docRetrieved = DatabaseManagement.readDatabase("annotated_collections",{"id":doc,"annotator":user})
+        #first checks if exists an annotated version for the user
+        if len(docRetrieved) == 0:
+            docRetrieved = DatabaseManagement.readDatabase("dialogues_collections",{"id":doc})
+
+        #import and format new dialogues
+        for doc_collection in docRetrieved:
+            __add_new_dialogues_from_json_dict(user, doc, responseObject, dialogueDict=doc_collection["document"])
+
+        dialogueFile.change_collection(user, doc)
+        return {"status":"success"}
+    else:
+        docRetrieved = DatabaseManagement.readDatabase("annotated_collections",{"id":doc})
 
     #update lida dialogue source
-    for doc_collection in doc:
+    for doc_collection in docRetrieved:
         dialogueFile.update_dialogues(user, doc_collection["document"])
 
-    dialogueFile.change_collection(user, collection)
+    dialogueFile.change_collection(user, doc)
 
     responseObject = { "status": "success" }
 
     return responseObject
 
-@LidaApp.route('/<user>/backup/<annotationRate>',methods=['GET','PUT'])
+@LidaApp.route('/<user>/backup/<activecollection>/<annotationRate>',methods=['GET','PUT'])
 def handle_backup_resource(user, annotationRate):
     """
     GET - Gets the database collection
     """
     responseObject = {}
 
-    if request.method == "GET":
-        backup = user+"_backup"
-        responseObject = DatabaseManagement.getUserEntry(backup)
-
     if request.method == "PUT":
-        responseObject = DatabaseManagement.updateDatabase(user, dialogueFile.activeCollection[user], annotationRate, True)
+        responseObject = DatabaseManagement.storeAnnotations(user, activecollection, annotationRate, True)
 
     return jsonify(responseObject)
 
@@ -425,7 +435,7 @@ def handle_errors_resource(id=None):
     return jsonify( responseObject )
 
 @LidaApp.route('/agreements', methods=['GET'])
-def handle_agreements_resource(self):
+def handle_agreements_resource():
     """
     GET - Returns the interannotator agreement
     """
@@ -454,6 +464,10 @@ def handle_agreements_resource(self):
                 for annotationName, listOfAnnotations in turn.items():
 
                     if annotationName=="turn_idx":
+                        continue
+                    if annotationName=="ID":
+                        continue
+                    if annotationName=="turn_id":
                         continue
  
                     annotationType = Configuration.configDict[annotationName]["label_type"]
@@ -494,7 +508,7 @@ def handle_users(user=None, userPass=None, email=None):
 
     if request.method == "GET":
 
-        responseObject = DatabaseManagement.readDatabase("users","userName")
+        responseObject = DatabaseManagement.readDatabase("users")
 
     if request.method == "POST":
 
@@ -521,15 +535,22 @@ def handle_wipe_request(user=None):
 
     return responseObject
 
-@LidaApp.route('/collections',methods=['GET'])
-@LidaApp.route('/collections/<id>',methods=['GET','POST'])
+@LidaApp.route('/collections/<DBcollection>',methods=['POST'])
+@LidaApp.route('/collections/<DBcollection>/<id>',methods=['GET','POST'])
 @LidaApp.route('/collections/<id>/<user>',methods=['PUT'])
-def handle_collections(id=None, user=None):
-    if not id:
+def handle_collections(id=None, DBcollection=None, user=None, fields=None):
 
-        if request.method == "GET":
+    try:
+        fields = request.get_json()
+        fields = fields["search"]
+        fields = json.loads(fields)
+    except:
+        pass
 
-            collectionNames = DatabaseManagement.readDatabase("dialogues","_id")
+    if fields is not None:
+        if request.method == "POST":
+        
+            collectionNames = DatabaseManagement.readDatabase(DBcollection, fields, {"id":1,"assignedTo":1,"lastUpdate":1, "status":1,"done":1})
 
             response = collectionNames
 
@@ -538,32 +559,35 @@ def handle_collections(id=None, user=None):
         if id == "ids":
             if request.method == "GET":
 
-                collectionNames = DatabaseManagement.readDatabase("dialogues","_id", None, ["assignedTo","status","lastUpdate"])
+                collectionNames = DatabaseManagement.readDatabase(DBcollection, None, {"id","assignedTo","status","lastUpdate","done"})
 
                 response = collectionNames
 
-        if request.method == "PUT":
+        #if request.method == "PUT":
 
-                response = __update_collection_from_workspace(user, id)
+                #response = __update_collection_from_workspace(user, id)
 
         if request.method == "POST":
 
             values = request.get_json()
+            #adds necessary fields
+            values["gold"] = {}
+            values["errors"] = {}
 
-            response = DatabaseManagement.createCollection(id, values["json"])
+            response = DatabaseManagement.createDoc(id, DBcollection, values["json"])
 
     return jsonify ( response )
 
 
-@LidaApp.route('/login/<id>/<idPass>',methods=['POST','PUT'])
-def handle_login(id, idPass=None):
+@LidaApp.route('/login/<id>/<idPass>/<role>',methods=['POST','PUT'])
+def handle_login(id, idPass=None,role=None):
     """
     Check if user login is permitted
     """
     responseObject = {}
 
     if request.method == "POST":
-        responseObject = LoginFuncs.logIn( id, idPass)
+        responseObject = LoginFuncs.logIn( id, idPass, role)
 
     if request.method == "PUT":
         responseObject = LoginFuncs.create(id)
@@ -662,29 +686,6 @@ def __add_new_dialogues_from_string_lists(user, fileName, currentResponseObject,
 
     return currentResponseObject
 
-
-def __update_collection_from_workspace(user, collectionID):
-    """
-    Update a collection from user workspace
-    """
-
-    responseObject = {"error":"Dialogue List is empty"}
-
-    #get user's dialogues
-
-    userDocument = dialogueFile.get_dialogues(user)
-
-    responseObject = {"error":"No collection with that ID"}
-
-    #update collectionID document field in DB
-
-    field = {"document":userDocument}
-
-    DatabaseManagement.updateCollection(collectionID, field)
-
-    responseObject = {"status":"success"}
-
-    return responseObject
 
 
 #######################################################

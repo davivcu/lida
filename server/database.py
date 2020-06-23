@@ -33,61 +33,80 @@ class DatabaseManagement(object):
 	"""
 
 	__DEFAULT_PATH = "LIDA_ANNOTATIONS"
+
+	def selected(collection):
+		if collection == "dialogues_collections":
+			return DatabaseConfiguration.dialogueCollections
+		elif collection == "annotated_collections":
+			return DatabaseConfiguration.annotatedCollections
+		else:
+			return DatabaseConfiguration.users
 	
-	def readDatabase(coll,attribute,string=None, fields=None):
+	def readDatabase(coll,pairs=None, projection=None):
 		# if field parameter is provided the search will be a projection of the id
 		# and the requested field only.
-		# if string is provided the search will be restricted to the req string
+		# if string is provided the search will be restricted to the string match
+		# last parameter allow to restrict response to desired fields
 
 		responseObject = []
 
-		print(" * Searching in:",coll,"for key-value",attribute,string)
+		selected_collection = DatabaseManagement.selected(coll)
+
+		print(" * Searching in:",coll,"for key '",pairs)
 
 		entries = {}
 
-		if coll == "users":
-			collection_selected = DatabaseConfiguration.users
-		else:
-			collection_selected = DatabaseConfiguration.dialogues
-
-		#simple search for one interested field
-		if string is not None:
-			query = collection_selected.find({attribute:string})
+		#adds restrictions to the search
+		if pairs is None:
+			pairs = {}
 		
-		#search with projection of interested fields only
-		elif fields is not None:
-			projection = {}
-			for element in fields:
-				projection[element]=1
-			query = collection_selected.find({},projection)
-		
-		#gets all
+		#search with projection of interested fields or simple search
+		if projection is not None:
+			query = selected_collection.find(pairs,projection)
 		else:
-			query = collection_selected.find()
+			query = selected_collection.find(pairs)
 
 		for line in query:
+			if line["_id"]:
+				line["_id"] = str(line["_id"])
 			responseObject.append(line)
 
 		print(responseObject);
 
 		return responseObject
 
-	def deleteEntry(collection, id):
+	def deleteDoc(collection, id):
 
 		#delete a database document by id
 
-		if collection == "dialogues":
-			DatabaseConfiguration.dialogues.delete_one({"_id":id})
-		else: 
-			DatabaseConfiguration.users.delete_one({"_id":id})
+		DatabaseManagement.selected(collection).delete_one({"id":id})
 
 		responseObject = { "status":"success" }
 		return responseObject
 
-	def updateDatabase(username, destination, annotationRate, backup=None):
+	def createDoc(document_id, collection, values):
+
+		values["lastUpdate"] = datetime.datetime.utcnow()
+
+		DatabaseManagement.selected(collection).save(values)
+		
+		response = {"staus":"success"}
+		return response 
+
+	def updateDoc(doc_id, collection, fields):
+
+		fields["lastUpdate"] = datetime.datetime.utcnow()
+
+		DatabaseManagement.selected(collection).update({ "id":doc_id }, { "$set": fields })
+
+
+###############################################
+# ANNOTATIONS AND DIALOGUE-COLLECTIONS UPDATE
+################################################
+
+	def storeAnnotations(username, destination, annotationRate, backup=None):
 
 		#update the database user's document
-
 		try:
 			with open(DatabaseManagement.__DEFAULT_PATH+"/"+username+".json") as file:
 				annotations = json.load(file)
@@ -97,45 +116,26 @@ class DatabaseManagement(object):
 		#if back up mode then saves with a different id and 
 		# checks if document will be empty before saving
 		if backup:
-			if annotations != {}:
-				DatabaseConfiguration.dialogues.save(
-				{"_id":username+"_"+destination, "document":annotations, "lastUpdate":datetime.datetime.utcnow(), "status":annotationRate})
-			else:
+			if annotations == {}:
 				responseObject = {"status":"empty"}
 				return responseObject
 
-		#saving
-		DatabaseConfiguration.dialogues.update(
-			{"_id":destination},
-			{ "$set": { "lastUpdate":datetime.datetime.utcnow(), "status":annotationRate, "document": annotations } }
-		)
+		#saving or updating
+		if len(DatabaseManagement.readDatabase("annotated_collections",{"id":destination, "annotator":username})) == 0:
+			fields = {
+				"id":destination, 
+				"fromCollection:":destination, 
+				"annotator":username, 
+				"done":False, 
+				"status":annotationRate, 
+				"document":annotations 
+			}
+			print(" * Creating document", destination, "in annotated_collections")
+			DatabaseManagement.createDoc(destination, "annotated_collections", fields)
+		else:
+			print(" * Updating document", destination, "in annotated_collections")
+			fields = { "status":annotationRate, "document":annotations }
+			DatabaseManagement.updateDoc(destination, "annotated_collections", fields)
 		
 		responseObject = {"status":"success"}
-		return responseObject
-
-	"""
-	DIALOGUES COLLECTIONS OPERATIONS
-	"""
-
-	def createCollection(collection_id, values):
-
-		DatabaseConfiguration.dialogues.save({
-			"_id":collection_id,
-			"title":values["title"],
-			"description":values["description"], 
-			"assignedTo":values["assignedTo"], 
-			"annotationStyle":values["annotationStyle"],
-			"lastUpdate":datetime.datetime.utcnow(),
-			"status":values["status"], 
-			"document":values["document"]})
-
-		response = {"staus":"success"}
-		return response 
-
-	def updateCollection(collection_id, fields):
-
-		for field in fields:
-			DatabaseConfiguration.dialogues.update(
-				{"_id":collection_id}, 
-				{ "$set": { field : fields[field] } }
-			)
+		return responseObject	

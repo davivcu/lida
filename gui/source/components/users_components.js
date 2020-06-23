@@ -82,21 +82,20 @@ Vue.component("users-view", {
             <user-bar v-bind:userName="userName"></user-bar>
 
           <div class="help-button-container">
-                <button class="help-button btn btn-sm" @click="log_out()">{{ guiMessages.selected.lida.logOut }}</button>
                 <button class="help-button btn btn-sm" @click="showUsersHelp = true">{{ guiMessages.selected.database.showHelp }}</button>
                 <button v-on:click="go_back($event)" class="back-button btn btn-sm btn-primary">{{guiMessages.selected.annotation_app.backToAll}}</button>
           </div>
         </div>
             <div class="inner-wrap">
                 <ul class="user-list">
-                    <li class="listed-user" v-for="name in allUsers" v-bind:id="name._id">
+                    <li class="listed-user" v-for="name in allUsers" v-bind:id="name.userName">
 
                         <div class="user-list-single-item-container">
 
                             <div class="user-info">
 
                                 <div class="user-id">
-                                    <span class="user-span">Username</span> {{name._id}}
+                                    <span class="user-span">Username</span> {{name.userName}}
                                 </div>
 
                                 <div class="user-password">

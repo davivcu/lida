@@ -30,6 +30,7 @@ from bson.objectid import ObjectId
 
 class DatabaseConfiguration:
 
+<<<<<<< HEAD
 	databaseURL="mongodb://localhost"
 #	databaseURL="mongodb+srv://augusto:asterix@cluster0-wyaud.mongodb.net/mymongodb?retryWrites=true&w=majority"
 
@@ -42,4 +43,15 @@ class DatabaseConfiguration:
 	collection = db.lida_database
 	users = db.lida_users
 	dialogues = db.lida_dialogues
+=======
+	databaseLocation = "localhost" 
+	databasePort = 27017
+
+	client = MongoClient(databaseLocation,databasePort)
+	db = client["lida"]
+
+	users = db["users"]
+	dialogueCollections = db["dialogues_collections"]
+	annotatedCollections = db["annotated_collections"]
+>>>>>>> master
 
