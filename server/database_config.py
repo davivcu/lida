@@ -30,28 +30,28 @@ from bson.objectid import ObjectId
 
 class DatabaseConfiguration:
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
 	databaseURL="mongodb://localhost"
-#	databaseURL="mongodb+srv://augusto:asterix@cluster0-wyaud.mongodb.net/mymongodb?retryWrites=true&w=majority"
+#	databaseURL="mongodb+srv://<user>:<passwd>@cluster0-wyaud.mongodb.net/lida?retryWrites=true&w=majority"
 
-	db = MongoClient(databaseURL).mymongodb
+	db = MongoClient(databaseURL)["lida"]
 	print("Connecting to DB");
 #	client = MongoClient("mongodb+srv://augusto:asterix@cluster0-wyaud.mongodb.net/<dbname>?retryWrites=true&w=majority")
 #	db = client.mymongodb
-	serverStatusResult=db.command("serverStatus")
-	pprint(serverStatusResult)
-	collection = db.lida_database
-	users = db.lida_users
-	dialogues = db.lida_dialogues
-=======
-	databaseLocation = "localhost" 
-	databasePort = 27017
+#	serverStatusResult=db.command("serverStatus")
+#	pprint(serverStatusResult)
+#	collection = db.lida_database
+#	users = db.lida_users
+#	dialogues = db.lida_dialogues
+#=======
+#	databaseLocation = "localhost" 
+#	databasePort = 27017
 
-	client = MongoClient(databaseLocation,databasePort)
-	db = client["lida"]
+#	client = MongoClient(databaseLocation,databasePort)
+#	db = client["lida"]
 
 	users = db["users"]
 	dialogueCollections = db["dialogues_collections"]
 	annotatedCollections = db["annotated_collections"]
->>>>>>> master
+#>>>>>>> master
 
