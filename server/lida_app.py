@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import copy
+import datetime
 from typing import Dict, List, Any, Tuple, Hashable, Iterable, Union
 from collections import defaultdict
 
@@ -15,7 +16,7 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
 # == Local ==
-from annotator_config import Configuration
+from annotator_config import *
 from annotator import DialogueAnnotator, MultiAnnotator
 from text_splitter import convert_string_list_into_dialogue
 from database import DatabaseManagement
@@ -181,9 +182,10 @@ def handle_name_resource(user):
     return jsonify(responseObject)
 
 @LidaApp.route('/database', methods=['GET'])
-@LidaApp.route('/<user>/database/<activecollection>/<annotationRate>',methods=['GET','PUT'])
+@LidaApp.route('/<user>/database/<mode>/<activecollection>',methods=['PUT'])
+@LidaApp.route('/<user>/database/<mode>/<activecollection>',methods=['PUT'])
 @LidaApp.route('/database/<id>/<DBcollection>',methods=['GET','POST','DELETE'])
-def handle_database_resource(id=None, user=None, annotationRate=None, DBcollection=None, activecollection=None):
+def handle_database_resource(id=None, user=None, mode=None, DBcollection=None, activecollection=None):
     """
     GET - Gets the dialogues id in the database collection for the user
         or Gets an entire database document 
@@ -195,6 +197,7 @@ def handle_database_resource(id=None, user=None, annotationRate=None, DBcollecti
     DELETE - Delete an entry in collection
 
     """
+
     if not DBcollection:
         DBcollection = "dialogues_collections"
 
@@ -202,7 +205,13 @@ def handle_database_resource(id=None, user=None, annotationRate=None, DBcollecti
 
     if user:
         if request.method == "PUT":
-            responseObject = DatabaseManagement.storeAnnotations( user, activecollection, annotationRate )
+
+            values = request.get_json()
+
+            if mode == "annotations":
+                responseObject = DatabaseManagement.storeAnnotations( user, activecollection, values )
+            else:
+                responseObject = DatabaseManagement.updateAnnotations( user, activecollection, values )
 
         #if request.method == "GET":
         #    responseObject = DatabaseManagement.getDatabaseIds()
@@ -239,7 +248,7 @@ def handle_dialogues_tag(user, id, tag, value):
 @LidaApp.route('/<user>/annotations_recover/<doc>',methods=['GET'])
 def handle_switch_collection_request(user, doc):
 
-    responseObject = {}
+    responseObject = {"status":"fail", "created":False}
 
     #get collection document from database
     if request.method == "PUT":
@@ -248,19 +257,33 @@ def handle_switch_collection_request(user, doc):
         #first checks if exists an annotated version for the user
         if len(docRetrieved) == 0:
             docRetrieved = DatabaseManagement.readDatabase("dialogues_collections",{"id":doc})
+            #create document 
+            values = {
+                "id":doc, 
+                "fromCollection":doc, 
+                "annotator":user, 
+                "done":False, 
+                "status":"0%",
+                "document":docRetrieved[0]["document"],
+                "lastUpdate":datetime.datetime.utcnow()
+            }
+            DatabaseManagement.createDoc(doc, "annotated_collections", values)
+            responseObject["created"] = True
 
         #import and format new dialogues
-        for doc_collection in docRetrieved:
-            __add_new_dialogues_from_json_dict(user, doc, responseObject, dialogueDict=doc_collection["document"])
+        for docCollection in docRetrieved:
+            __add_new_dialogues_from_json_dict(user, doc, responseObject, dialogueDict=docCollection["document"])
 
         dialogueFile.change_collection(user, doc)
-        return {"status":"success"}
+        responseObject["status"] = "success"
+
+        return responseObject
     else:
-        docRetrieved = DatabaseManagement.readDatabase("annotated_collections",{"id":doc})
+        docRetrieved = DatabaseManagement.readDatabase("annotated_collections",{"id":doc, "annotator":user})
 
     #update lida dialogue source
-    for doc_collection in docRetrieved:
-        dialogueFile.update_dialogues(user, doc_collection["document"])
+    for docCollection in docRetrieved:
+        dialogueFile.update_dialogues(user, docCollection["document"])
 
     dialogueFile.change_collection(user, doc)
 
@@ -268,15 +291,17 @@ def handle_switch_collection_request(user, doc):
 
     return responseObject
 
-@LidaApp.route('/<user>/backup/<activecollection>/<annotationRate>',methods=['GET','PUT'])
-def handle_backup_resource(user, annotationRate):
+@LidaApp.route('/<user>/backup/<activecollection>',methods=['PUT'])
+def handle_backup_resource(user, activecollection):
     """
     GET - Gets the database collection
     """
     responseObject = {}
 
+    fields = request.get_json()
+
     if request.method == "PUT":
-        responseObject = DatabaseManagement.storeAnnotations(user, activecollection, annotationRate, True)
+        responseObject = DatabaseManagement.storeAnnotations(user, activecollection, fields, True)
 
     return jsonify(responseObject)
 
@@ -390,6 +415,7 @@ def handle_errors_resource(id=None):
         }
 
         listOfDialogue = annotationFiles.get_all_files( dialogueId = id )
+
         errorList = annotatorErrors.get(id)
 
         if errorList:
@@ -463,25 +489,23 @@ def handle_agreements_resource():
                 totalTurns += 1
                 for annotationName, listOfAnnotations in turn.items():
 
-                    if annotationName=="turn_idx":
+                    if annotationName=="turn_idx" or annotationName=="turn_id":
                         continue
-                    if annotationName=="ID":
-                        continue
-                    if annotationName=="turn_id":
-                        continue
+
+                    if annotationName not in Configuration.metaTags:
  
-                    annotationType = Configuration.configDict[annotationName]["label_type"]
+                        annotationType = Configuration.configDict[annotationName]["label_type"]
 
-                    agreementScoreFunc = agreementScoreConfig[ annotationType ]
+                        agreementScoreFunc = agreementScoreConfig[ annotationType ]
 
-                    if agreementScoreFunc:
-                        totalLabels =   len( Configuration.configDict[annotationName]["labels"] )
-                        temp = agreementScoreFunc( listOfAnnotations, totalLabels )
+                        if agreementScoreFunc:
+                            totalLabels = len( Configuration.configDict[annotationName]["labels"] )
+                            temp = agreementScoreFunc( listOfAnnotations, totalLabels )
 
-                        errors += temp.get("errors")
-                        totalAnnotations += totalLabels
-                        kappa += temp.get("kappa")
-                        accuracy += temp.get("accuracy")
+                            errors += temp.get("errors")
+                            totalAnnotations += totalLabels
+                            kappa += temp.get("kappa")
+                            accuracy += temp.get("accuracy")
 
         responseObject["errors"] = errors
         responseObject["total"] = totalAnnotations
@@ -499,7 +523,7 @@ def handle_agreements_resource():
     return jsonify( responseObject )
 
 @LidaApp.route('/users', methods=['GET'])
-@LidaApp.route('/create_users', methods=['POST'])
+@LidaApp.route('/users/create', methods=['POST'])
 def handle_users(user=None, userPass=None, email=None): 
     """
     GET - all users, POST create a new user
@@ -542,24 +566,37 @@ def handle_collections(id=None, DBcollection=None, user=None, fields=None):
 
     try:
         fields = request.get_json()
-        fields = fields["search"]
-        fields = json.loads(fields)
+        fields = json.loads(fields["search"])
     except:
         pass
 
     if fields is not None:
-        if request.method == "POST":
+        try:
+            projection = request.get_json()
+            projection = json.loads(projection["projection"])
+        except:
+            projection = {"id":1,"assignedTo":1,"lastUpdate":1, "status":1, "done":1 }
         
-            collectionNames = DatabaseManagement.readDatabase(DBcollection, fields, {"id":1,"assignedTo":1,"lastUpdate":1, "status":1,"done":1})
+        collectionNames = DatabaseManagement.readDatabase(DBcollection, fields, projection)
 
-            response = collectionNames
+        response = collectionNames
 
     if id:
 
         if id == "ids":
             if request.method == "GET":
 
-                collectionNames = DatabaseManagement.readDatabase(DBcollection, None, {"id","assignedTo","status","lastUpdate","done"})
+                collectionNames = DatabaseManagement.readDatabase(DBcollection, None, {"id","assignedTo","status","lastUpdate","done","gold"})
+
+                #only return if gold is empty or not
+                try: 
+                    for name in collectionNames:
+                        if name["gold"] != {}:
+                            name["gold"] = True
+                        else:
+                            name["gold"] = False
+                except:
+                    pass
 
                 response = collectionNames
 
@@ -570,11 +607,13 @@ def handle_collections(id=None, DBcollection=None, user=None, fields=None):
         if request.method == "POST":
 
             values = request.get_json()
+            values = values["json"]
             #adds necessary fields
             values["gold"] = {}
             values["errors"] = {}
+            values["lastUpdate"] = datetime.datetime.utcnow()
 
-            response = DatabaseManagement.createDoc(id, DBcollection, values["json"])
+            response = DatabaseManagement.createDoc(id, DBcollection, values)
 
     return jsonify ( response )
 
@@ -594,10 +633,27 @@ def handle_login(id, idPass=None,role=None):
 
     return jsonify(responseObject)
 
+@LidaApp.route('/annotations_import/<collection_id>',methods=['GET'])
+def handle_annotations_import(collection_id):
+
+    responseObject = {"status":"fail"}
+
+    collections = DatabaseManagement.readDatabase("annotated_collections", {"id":collection_id})
+
+    if collections != []:
+        if collections[0]["document"]:
+            for collection in collections:
+                admin__add_new_dialogues_from_json_dict(responseObject, collection["document"], collection["annotator"])
+
+            responseObject = {"status":"success", "imported":collections}
+            
+    return jsonify(responseObject)
+
+
+
 #################################################
 # INDEX FUNCTIONS
 #################################################
-
 
 def __handle_post_of_new_dialogues(user, fileName=None):
     """
@@ -840,7 +896,7 @@ class InterannotatorMethods:
                     continue
 
                 #metatags can be ignored
-                if annotationName != "annotation_style" or "description" or "title":
+                if annotationName not in Configuration.metaTags:
                     try:
                         #confront
                         annotationType = Configuration.configDict[annotationName]["label_type"]
@@ -851,7 +907,6 @@ class InterannotatorMethods:
                             continue
 
                 if agreementFunc:
-
                     temp = agreementFunc( listOfAnnotations )
                     predictions = temp.get("predictions")
 

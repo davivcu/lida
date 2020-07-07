@@ -5,7 +5,7 @@
 Vue.component("all-dialogues", {
 
    props: [
-      "alreadyVisited"
+      "alreadyVisited", "collectionRate"
    ],
 
    data () {
@@ -15,7 +15,6 @@ Vue.component("all-dialogues", {
          showModal: false,
          // Reference to the language item
          guiMessages,
-         collectionRate:'0%',
          userName: mainApp.userName,
          activeCollection: mainApp.activeCollection
       }
@@ -71,12 +70,7 @@ Vue.component("all-dialogues", {
                   //if new session then recover from database
                   this.restore_session_from_database();
                }
-               if (mainApp.restored != true) {
-                  //wait for 10 seconds then start cyclic-backups
-                  setTimeout(this.cyclic_backup, 10000);
-               }
                mainApp.restored = true;
-
          });
       },
 
@@ -87,16 +81,18 @@ Vue.component("all-dialogues", {
               total_turns += Number(this.allDialogueMetadata[i]["num_turns"]-1);
               summatory += Number(this.allDialogueMetadata[i]["status"].slice(0,-1) * this.allDialogueMetadata[i]["num_turns"]-1)
           }
-          this.collectionRate = Number( summatory / total_turns).toFixed(1);
-          if ((this.collectionRate <= 0) || (this.collectionRate == NaN)) {
-            this.collectionRate = 0;
-          } else if (this.collectionRate >= 99) {
-            this.collectionRate = 100;
+          mainApp.collectionRate = Number( summatory / total_turns).toFixed(1);
+          if ((mainApp.collectionRate <= 0) || (mainApp.collectionRate == NaN)) {
+            mainApp.collectionRate = 0;
+          } else if (mainApp.collectionRate >= 99) {
+            mainApp.collectionRate = 100;
           }
-          this.collectionRate = this.collectionRate+"%";
-          mainApp.collectionRate = this.collectionRate;
-          if (mainApp.collectionRate != "NaN%")
-            backend.update_db(mainApp.collectionRate, false);
+          mainApp.collectionRate = mainApp.collectionRate+"%";
+          if (mainApp.collectionRate == "NaN%") {
+              mainApp.collectionRate = "0%";
+              mainApp.collectionRate = "0%"
+          }
+          //backend.update_collection_fields(mainApp.activeCollection,{"status":mainApp.collectionRate}, false);
       },
 
       dialogue_already_visited(id) {
@@ -104,49 +100,12 @@ Vue.component("all-dialogues", {
       },
 
       clicked_dialogue(clickedDialogue) {
-         allDialoguesEventBus.$emit("dialogue_selected", this.allDialogueMetadata[clickedDialogue].id)
-      },
-
-      create_new_dialogue(event) {
-        //if a collection is active then new dialogues are member of the active collection
-            if ((localStorage["collection"] != "null") && (localStorage["collection"] != "null")) {
-                let collectionValue = localStorage["collection"];
-
-                backend.post_empty_dialogue(collectionValue)
-                    .then( (newDialogueId) => {
-                        this.allDialogueMetadata.push({id: newDialogueId, num_turns: 1, status:"0%", collection:collectionValue});
-                });
-            } else {
-                backend.post_empty_dialogue()
-                    .then( (newDialogueId) => {
-                        this.allDialogueMetadata.push({id: newDialogueId, num_turns: 1, status:"0%", collection:""});
-                });
-            }
-      },
-
-      delete_dialogue(event) {
-
-         if (confirm("Are you sure you want to permanently delete this dialogue? This cannot be undone!")) {
-
-            console.log('-------- DELETING --------')
-            console.log()
-            idToDelete = event.target.parentNode.parentNode.id;
-            nameToDelete = this.allDialogueMetadata[idToDelete].id
-            backend.del_single_dialogue_async(nameToDelete)
-               .then( () => {
-                    allDialoguesEventBus.$emit("refresh_dialogue_list");
-                    backend.update_db(mainApp.collectionRate, false);
-               });
-
-            allDialoguesEventBus.$emit('dialogue_deleted', nameToDelete);
-
-        } else {
-
-            return
-
-        }
-
-    },
+         //if collection is freezed dialogues can't be opened
+         if (!mainApp.done)
+            allDialoguesEventBus.$emit("dialogue_selected", this.allDialogueMetadata[clickedDialogue].id)
+         else
+            allDialoguesEventBus.$emit("show_message", guiMessages.selected.collection.freezed )
+      }, 
 
     open_file(event){
          let file = event.target.files[0];
@@ -272,7 +231,7 @@ Vue.component("all-dialogues", {
       },
 
       clicked_collections_button() {
-         databaseEventBus.$emit("collections_selected");
+         databaseEventBus.$emit("assignements_selected");
       },
   },
 

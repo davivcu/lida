@@ -83,7 +83,7 @@ async function get_annotation_style_async(id){
 
 
         dialogueStyle = response.data
-        console.log("=============ANNOTATION CLASSES==============")
+        console.log("============= ANNOTATION CLASSES ==============")
         console.log(dialogueStyle)
         return dialogueStyle
 
@@ -138,7 +138,7 @@ async function get_all_dialogue_ids_async(admin) {
 
     var response = await axios.get(apiLink)
 
-    console.log(response)
+    console.log(response.data)
 
     dialoguesList = response.data
     console.log("=========== ALL DIALOGUE METADATA LIST ===========")
@@ -387,8 +387,6 @@ const apiLink = API_BASE+"/"+session_name()+`/annotations_load/${doc}`
     try {
 
         var response = await axios.put(apiLink, doc)
-
-        console.log("=========== RECOVERY DONE ===========")
         return response
 
     } catch(error) {
@@ -462,23 +460,19 @@ async function get_all_db_entries_ids() {
 
 }
 
-async function update_db(annotationRate, backup) {
+async function update_annotations(activeColl,fields,backup) {
 
   var entries_ids = {}
 
-  activecollection = mainApp.activeCollection;
-
   if (backup == true) {
-    var apiLink = API_BASE+"/"+session_name()+`/backup/${activecollection}/${annotationRate}`
+    var apiLink = API_BASE+"/"+session_name()+`/backup/${activeColl}`
   } else {
-    var apiLink = API_BASE+"/"+session_name()+`/database/${activecollection}/${annotationRate}`
+    var apiLink = API_BASE+"/"+session_name()+`/database/annotations/${activeColl}`
   }
 
   try {
 
-    var response = await axios.put(apiLink)
-
-    console.log(response)
+    var response = await axios.put(apiLink, fields)
 
     entriesList = response.data
     console.log("======== UPDATING DATABASE ========")
@@ -492,6 +486,25 @@ async function update_db(annotationRate, backup) {
 
   }
 
+}
+
+async function update_collection_fields(activeColl,fields) {
+
+    var apiLink = API_BASE+"/"+session_name()+`/database/fields/${activeColl}`
+
+    try {
+
+        var response = await axios.put(apiLink, fields)
+
+        console.log("======== UPDATING DATABASE ========")
+        console.log(response)
+        return response
+
+    } catch(error) {
+
+        console.log(error);
+        alert(guiMessages.selected.lida.connectionError)
+    }
 }
 
 async function del_db_entry_async(entryId, collection) {
@@ -649,7 +662,7 @@ async function get_collections_async(DBcollection) {
   }
 }
 
-async function get_specific_collections(DBcollection,fields) {
+async function get_specific_collections(DBcollection,fields,projection) {
 
   entriesList = []
 
@@ -657,9 +670,10 @@ async function get_specific_collections(DBcollection,fields) {
 
   try {
 
-    var response = await axios.post(apiLink, {search:JSON.stringify(fields)})
-
-    console.log(response)
+    if (projection == undefined)
+        var response = await axios.post(apiLink, {search:JSON.stringify(fields)})
+    else
+        var response = await axios.post(apiLink, {search:JSON.stringify(fields), "projection":JSON.stringify(projection)})
 
     entriesList = response.data
 
@@ -677,10 +691,10 @@ async function update_collection_async(id, params, doc) {
 
     if (typeof(doc) != "string") {
         doc = JSON.parse("{"+doc+"}");
-        params.document = doc
-    } else {
+    } else {
         doc = "{"+doc+"}"
     }
+    params["document"] = doc
 
     DBcollection = "dialogues_collections"
 
@@ -783,6 +797,23 @@ async function admin_post_empty_dialogue() {
     }
 }
 
+async function admin_import_all_annotations(collection) {
+
+    var apiLink = API_BASE+`/annotations_import/${collection}`
+
+    try {
+
+        var response = await axios.get( apiLink )
+        console.log('---- RESPONSE TO POST DATA ----', response);
+        return response;
+
+    } catch(error) {
+
+        console.log(error);
+    }
+    return false;
+}
+
 async function import_new_dialogues_from_string_lists_async(stringLists) {
 
     var apiLink = API_BASE+`/dialogues_import`
@@ -843,7 +874,7 @@ async function get_all_users(){
 
 async function create_user(user,pass,role,email){
     
-    const apiLink = API_BASE+`/create_users`;
+    const apiLink = API_BASE+`/users/create`;
 
     var response = {}
 
@@ -887,10 +918,12 @@ backend =
     post_new_dialogue_from_json_string_async    : post_new_dialogue_from_json_string_async,
 
     get_all_db_entries_ids                      : get_all_db_entries_ids,
-    update_db                                   : update_db,
     get_db_entry_async                          : get_db_entry_async,
     del_db_entry_async                          : del_db_entry_async,
     get_all_entries_async                       : get_all_entries_async,
+
+    update_annotations                          : update_annotations,
+    update_collection_fields                    : update_collection_fields,
 
     login                                       : login,
     get_all_users                               : get_all_users,
@@ -905,6 +938,7 @@ backend =
     get_errors_async                            : get_errors_async,
     put_error_async                             : put_error_async,
 
+    admin_import_all_annotations                 : admin_import_all_annotations,
     admin_post_empty_dialogue                    : admin_post_empty_dialogue,
     import_new_dialogues_from_string_lists_async : import_new_dialogues_from_string_lists_async,
     import_new_dialogue_from_json_string_async   : import_new_dialogue_from_json_string_async

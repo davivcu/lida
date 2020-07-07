@@ -8,13 +8,16 @@ guiMessages = {
             title:"Annotation-Conflicts Resover",
             titlePanel:"Administration Panel",
             interAnno:"Interannotator Resolution",
-            dataItems: "Data Items",
+            dataItems: "Items",
             visited: "Visited",
+            supervision:"Supervision",
             notVisited: "Not visited",
-            button_downloadAll:"Download All Data",
+            button_downloadAll:"Download Data",
             button_interAgreement:"Inter-annotator Agreement", 
-            annotators:"Sources", 
+            annotators:"Assigned to", 
+            actualAnnotators:"Sources",
             button_upload:"Upload File or Drag and Drop",
+            button_admin:"Admin Panel",
             dropAnywhere: "Drop Files Anywhere to Upload!",
             userButton: "Users Management",
             createButton: "Add",
@@ -23,6 +26,8 @@ guiMessages = {
             wipeConfirm:"Are you sure to clean the dialogue list? Actual dialogues' files won't be deleted",
             button_wipeView:"Clean dialogues view",
             annotation:"Annotation",
+            backToColl:"Back",
+            importConflictsResult:"Nothing to import, no annotated versions have been produced yet",
         },
         lida: {
             button_fileFormatInfo: "File Format Info",
@@ -43,6 +48,10 @@ guiMessages = {
             logOut:"logout",
             confirmLogout: "Do you want to log out?",
             load:"Load collection",
+            assignedColl:"Assigned collections",
+            activeColl:"Active collection",
+            alert:"Alert",
+            welcome:"Welcome",
         },
         collection: {
             title: "Collections Management",
@@ -74,7 +83,10 @@ guiMessages = {
             new: "Imported",
             old: "Previous",
             save: "Save and Update Collection",
-            done: "Annotations completed"
+            done: "Annotations completed",
+            freeze: "This operation will freeze the collection and notify your work is done and can be reviewed. Do it only when you finished",
+            freezed: "These annotations are freezed and can not be edited until reviewed and unlocked by an administrator"
+
         },
         annotation_app: {
             turnId: "Turn Id",
@@ -209,8 +221,10 @@ guiMessages = {
             notVisited: "Non visitato",
             button_downloadAll:"Scarica i dati",
             button_interAgreement:"Indice di concordanza", 
-            annotators:"Fonti", 
+            annotators:"Assegnato a", 
+            actualAnnotators:"Fonti",
             button_upload:"Carica o trascina un file",
+            button_admin:"Pannello Admin",
             dropAnywhere: "Rilascia il file per caricarlo!",
             userButton: "Gestione Utenti",
             createButton: "Crea",
@@ -220,6 +234,8 @@ guiMessages = {
             button_wipeView:"Pulisci la lista",
             supervision:"Supervisione",
             annotation:"Annotazione",
+            backToColl: "Indietro alle Collezioni",
+            importConflictsResult:"Non è stato trovato niente da importare, nessuna versione annotata è stata ancora prodotta.",
         },
         lida: {
             button_fileFormatInfo: "Info sui formati",
@@ -240,6 +256,10 @@ guiMessages = {
             logOut:"logout",
             confirmLogout:"Vuoi eseguire il logout?",
             load:"Carica collezione",
+            activeColl:"Collezione attiva",
+            assignedColl:"Collezioni assegnate",
+            alert:"Attenzione",
+            welcome:"Benvenuto",
         },
         collection: {
             title: "Gestione Collezioni",
@@ -272,6 +292,8 @@ guiMessages = {
             confirmRevision: "Questa operazione aggiungerà la collezione nella lista di revisione, confrontandola con eventuali collezioni già presenti",
             save: "Save and Update Collection",
             done: "Annotazione completata",
+            freeze: "Questa operazione bloccherà la collezione e notificherà che hai finito e che le annotazioni sono pronte per la revisione",
+            freezed: "L'annotazione è stata segnalata come completata e quindi non potrà essere modificata fino alla revisione e allo sblocco da parte di un amministratore."
         },
         annotation_app: {
             turnId: "Id Turno",

@@ -1,11 +1,4 @@
 /*******************************************************************************
-* IMPORT STATEMENTS
-*******************************************************************************/
-
-
-
-
-/*******************************************************************************
 * MAIN VIEW
 *******************************************************************************/
 
@@ -24,14 +17,18 @@ var mainApp = new Vue({
       restored:false,
       userName:'',
       role:'annotator',
-      activeCollection:localStorage["collection"],
+      activeCollection:localStorage["activeCollection"],
       collectionRate:'',
+      done:false,
+      boot:true,
+      showMessage:false,
     }
   },
 
   created () {
       // Annotation APP EVENTS
       annotationAppEventBus.$on("go_back", this.clear_annotation );
+      annotationAppEventBus.$on("admin_panel_clicked", this.switch_to_admin_panel);
       annotationAppEventBus.$on("dialogue_id_change", this.change_dialogue_name );
 
       // Split View EVENTS
@@ -43,10 +40,12 @@ var mainApp = new Vue({
       allDialoguesEventBus.$on( "dialogue_deleted", this.remove_dialogue_from_visited_list )
       allDialoguesEventBus.$on( "loaded_text_file", this.handle_loaded_text_file )
       allDialoguesEventBus.$on( "update_username", this.update_username )
+      allDialoguesEventBus.$on( "show_message", this.show_message )
+      allDialoguesEventBus.$on( "close_message", this.show_message )
 
       //Database View Event Bus
       databaseEventBus.$on( "document_selected", this.load_document_view )
-      databaseEventBus.$on( "collections_selected", this.load_collections_view )
+      databaseEventBus.$on( "assignements_selected", this.load_collections_view )
       databaseEventBus.$on( "collection_active", this.set_active_collection )
 
       //Check if already logged, restore session
@@ -64,7 +63,7 @@ var mainApp = new Vue({
                 if (response) {
                     console.log("File name updated");
                     this.set_cookie(newName,pass);
-                    this.status = "collection-view";
+                    this.status = "assignements-view";
                 } else {
                     alert('Server error, name not changed.');
                 }
@@ -80,10 +79,11 @@ var mainApp = new Vue({
     },
 
     check_collection_cookie: function() {
-      if (localStorage["collection"] == undefined) {
-        return
+      if (localStorage["activeCollection"] == undefined) {
+        //ask server otherwise
+        this.activeCollection = null;
       } else {
-        this.activeCollection = localStorage["collection"];
+        this.activeCollection = localStorage["activeCollection"];
       }
     },
 
@@ -98,6 +98,7 @@ var mainApp = new Vue({
                     if (response.data.status == "success") {
                         console.log("Username still valid");
                         this.update_username(memorizedName);
+                        mainApp.role = response.data.role;
                     } else {
                         (response.data.status == "fail")
                         this.status = "logging";
@@ -115,25 +116,13 @@ var mainApp = new Vue({
         if (!this.alreadyVisited.includes(event)) {
             this.alreadyVisited.push(event)
         }
+        setTimeout(this.cyclic_backup, 10000);
     },
 
     set_active_collection: function (event) {
         console.log(event);
-        localStorage["collection"] = event;
-        this.activeCollection = localStorage["collection"];
-    },
-
-    clear_annotation: function (event) {
-        this.displayingDialogue = '';
-        this.status = 'list-all';
-    },
-
-    clear_text_split: function (event) {
-
-        this.splittingTextSourceFile = '';
-        this.splittingText = '';
-        this.status = 'list-all'
-
+        localStorage["activeCollection"] = event;
+        this.activeCollection = localStorage["activeCollection"];
     },
 
     remove_dialogue_from_visited_list(id) {
@@ -175,7 +164,15 @@ var mainApp = new Vue({
     },
 
     load_collections_view: function (event) {
-        this.status = 'collection-view';
+        backend.update_collection_fields(mainApp.activeCollection,{"status":mainApp.collectionRate}, false)
+          .then((response) => {
+              console.log("Collection Status % Updated");
+              this.status = 'assignements-view';
+        });
+    },
+
+    show_message: function (message) {
+        this.showMessage = message;
     },
 
     cyclic_backup: function() {
@@ -185,7 +182,8 @@ var mainApp = new Vue({
         */
         console.log("======= CYCLIC BACKUP ======")
         if (!document.hidden) {
-            backend.update_db(mainApp.collectionRate, true)
+            fields = {"status":mainApp.collectionRate};
+            backend.update_annotations(mainApp.activeCollection, fields, true)
             .then( (response) => {
                 console.log(utils.create_date());
                 if (response.status == "success") {
@@ -199,31 +197,57 @@ var mainApp = new Vue({
             })
         }
         var nextBackup = setTimeout( this.cyclic_backup, 120000 )
-    }
+    },
+
+    clear_annotation: function (event) {
+        this.displayingDialogue = '';
+        this.status = 'list-all';
+    },
+
+    clear_text_split: function (event) {
+        this.splittingTextSourceFile = '';
+        this.splittingText = '';
+        this.status = 'list-all'
+
+    },
+
+    switch_to_admin_panel: function () {
+        console.log(" ==== ADMIN PANEL ====");
+        this.status = "admin-panel";
+    },
 
 },
 
   template:
   `
+    <div id="lida_main">
+      <login-view v-if="status === 'logging'">
+      </login-view>
 
-    <login-view v-if="status === 'logging'">
-    </login-view>
-
-    <annotation-app v-else-if="status === 'annotating'"
+      <annotation-app v-else-if="status === 'annotating'"
                     v-bind:dialogueId="displayingDialogue">
-    </annotation-app>
+      </annotation-app>
 
-    <text-splitter v-else-if="status === 'splitting-text-file'"
+      <text-splitter v-else-if="status === 'splitting-text-file'"
                    v-bind:file="splittingFile"
                    v-bind:sourceFname="splittingTextSourceFile">
-    </text-splitter>
+      </text-splitter>
 
-    <collection-view v-else-if="status === 'collection-view'">
-    </collection-view>
+      <collection-view v-else-if="status === 'assignements-view'"
+                   v-bind:done="done">
+      </collection-view>
 
-    <all-dialogues v-else
-                   v-bind:alreadyVisited="alreadyVisited">
-    </all-dialogues>
+      <main-admin-view v-else-if="status === 'admin-panel'"
+                  v-bind:userName="userName">
+      </main-admin-view>
+
+      <all-dialogues v-else
+                   v-bind:alreadyVisited="alreadyVisited"
+                   v-bind:collectionRate="collectionRate">
+      </all-dialogues>
+
+      <message-modal v-if="showMessage != false"></message-modal>
+    </div>
   `
 
 
