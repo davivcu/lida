@@ -1,27 +1,27 @@
 version: '3'
 services:
-  matilda:
-    build:
-      context: ./web
-      dockerfile: Dockerfile.lida
-    ports: 
-      - "5000:5000"
-    network_mode: "host"
+  lida:
     image: mastrogeppetto/dockerlida:latest
+    volumes: 
+      - ./matilda_conf:/app/matilda_conf
+    network_mode: "host"
+    restart: always
+    logging:
+      driver: "syslog"
   mongodb:
     image: mongo:bionic
-    ports:
-      - "27017-27019:27017-27019"
     volumes:
       - ./configdb:/data/configdb
       - ./db:/data/db
     network_mode: "host"
+    restart: always
+    logging:
+      driver: "syslog"
   nginx:
     image: nginx
-    ports: 
-      - "443:443"
-      - "80:80"
     volumes:
       - ./nginx_conf:/etc/nginx/conf.d
+    restart: always
     network_mode: "host"
-
+    logging:
+      driver: "syslog"
