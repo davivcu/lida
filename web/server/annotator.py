@@ -40,6 +40,9 @@ class MultiAnnotator(object):
         self.allFiles = { MultiAnnotator.__GOLD_FILE_NAME : AdminAnnotator(self.path, MultiAnnotator.__GOLD_FILE_NAME) }
         self.filesAdded = 0
 
+        self.annotatorErrors = {}
+        self.annotatorErrorsMeta = {}
+
         #self.__load_all_jsons(self.path)
 
     def get_all_files(self, dialogueId):
@@ -69,7 +72,7 @@ class MultiAnnotator(object):
         self.allFiles[MultiAnnotator.__GOLD_FILE_NAME].update_dialogues(jsonObject)
 
         self.allFiles[ fileName ] = AdminAnnotator( self.path, fileName )
-        self.save()
+        #self.save()
 
     def get_metadata(self):
         """
@@ -167,6 +170,9 @@ class MultiAnnotator(object):
         self.allFiles = {}
         self.fileAdded = 0
         self.__init__(self.path)
+        
+        AdminAnnotator.__dialogues = {}
+        self.__dialogues = {}
 
         return {"status":"success"}
 
@@ -182,7 +188,6 @@ class DialogueAnnotator(object):
 
 
     class dialogues(object):
-
         def __getitem__(self,key):
             return getattr(self,key)
     
@@ -227,7 +232,7 @@ class DialogueAnnotator(object):
         oldFileName = self.__fileName
         self.__fileName = newName
 
-        self.save(newName)
+        #self.save(newName)
 
         #if remove:
         #    os.remove( os.path.join( self.__filePath, oldFileName ) )
@@ -247,7 +252,7 @@ class DialogueAnnotator(object):
             self.addedDialogues = {}
             self.addedDialogues[newName] = 0
 
-        print("\n * Session requested for",newName,self.__dialogues[DialogueAnnotator.__SESSION_USER])
+        print("\n * New session for",newName,self.__dialogues[DialogueAnnotator.__SESSION_USER])
 
     def set_file( self, filePath, fileName=None ):
         """
@@ -257,11 +262,10 @@ class DialogueAnnotator(object):
 
         if fileName:
             self.__fileName = fileName
-            try:
-                self.__dialogues[DialogueAnnotator.__SESSION_USER] = load_json_file( os.path.join( self.__filePath, self.__fileName ) )
-            except FileNotFoundError:
-                save_json_file( obj=self.__dialogues[DialogueAnnotator.__SESSION_USER], path=os.path.join( self.__filePath, self.__fileName ) )
-
+            #try:
+            #    self.__dialogues[DialogueAnnotator.__SESSION_USER] = load_json_file( os.path.join( self.__filePath, self.__fileName ) )
+            #except FileNotFoundError:
+            #    save_json_file( obj=self.__dialogues[DialogueAnnotator.__SESSION_USER], path=os.path.join( self.__filePath, self.__fileName ) )
         else:
             self.__fileName = DialogueAnnotator.__DEFAULT_FILENAME
 
@@ -299,7 +303,6 @@ class DialogueAnnotator(object):
                 collection = self.__dialogues[DialogueAnnotator.__SESSION_USER][dialogueID][0]["collection"]
             except:
                 collection = ""
-
             try:
                 status = self.__dialogues[DialogueAnnotator.__SESSION_USER][dialogueID][0]["status"]
             except:
@@ -318,7 +321,7 @@ class DialogueAnnotator(object):
 
         self.__dialogues[DialogueAnnotator.__SESSION_USER][ id ] = newDialogue
 
-        self.save(user)
+        #self.save(user)
 
         return {"status" : "success"}
 
@@ -386,7 +389,7 @@ class DialogueAnnotator(object):
         self.insert_meta_tags(user, id, "collection", collectionTag)
         self.insert_meta_tags(user, id, "status", "0%")
 
-        self.save( user )
+        #self.save( user )
 
         return {"id":id, "overwritten":overwritten}
 
@@ -419,7 +422,7 @@ class DialogueAnnotator(object):
 
         del self.__dialogues[DialogueAnnotator.__SESSION_USER][ id ]
 
-        self.save(user)
+        #self.save(user)
 
 
     def save(self, user):
@@ -428,9 +431,8 @@ class DialogueAnnotator(object):
         """
         DialogueAnnotator.__SESSION_USER = user
 
-        save_json_file( obj=self.__dialogues[DialogueAnnotator.__SESSION_USER], path=os.path.join( self.__filePath, user+".json" ) )
-
-
+        #deactivated but working
+        #save_json_file( obj=self.__dialogues[DialogueAnnotator.__SESSION_USER], path=os.path.join( self.__filePath, "USER_"+user+".json" ) )
 
 
     def __get_new_dialogue_id(self,user):
@@ -449,7 +451,7 @@ class DialogueAnnotator(object):
 
         self.set_dialogues( user )
 
-        self.save( user )
+        #self.save( user )
 
         return { "status": "wiped" }
 

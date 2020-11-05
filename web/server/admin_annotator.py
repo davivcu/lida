@@ -49,7 +49,7 @@ class AdminAnnotator(object):
         oldFileName = self.__fileName
         self.__fileName = newName
 
-        self.save()
+        #self.save()
 
         if remove:
             os.remove( os.path.join( self.__filePath, oldFileName ) )
@@ -70,7 +70,7 @@ class AdminAnnotator(object):
             try:
                 self.__dialogues = load_json_file( os.path.join( self.__filePath, self.__fileName ) )
             except FileNotFoundError:
-                save_json_file( obj=self.__dialogues, path=os.path.join( self.__filePath, self.__fileName ) )
+                save_json_file( obj=self.__dialogues, path=os.path.join( self.__filePath, self.__fileName) )
 
         else:
             self.__fileName = AdminAnnotator.__DEFAULT_FILENAME
@@ -159,7 +159,8 @@ class AdminAnnotator(object):
         """
         Save the dialogues dictionary
         """
-        save_json_file( obj=self.__dialogues, path=os.path.join( self.__filePath, self.__fileName ) )
+        #deactivated but working
+        #save_json_file( obj=self.__dialogues, path=os.path.join( self.__filePath, "INTER_"+self.__fileName+".json" ) )
 
 
 
@@ -170,9 +171,6 @@ class AdminAnnotator(object):
         newId = "Dialogue" + str(self.addedDialogues)
 
         return newId
-
-
-
 
         # save_json_file( obj=self.__dialogues, path=self.__filePath )
 
