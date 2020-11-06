@@ -4,7 +4,7 @@ The developer uses the root of the Matilda-dev repository.
 
 To test the code, the developer deploys locally the three containers: the app, the db, and the proxy, using the command:
 
-	$ sudo docker compose build
+	$ sudo docker-compose build
     $ sudo docker-compose up
     
 To stop the local deployment the devoloper uses Crtl-C in the terminal where the docker-compose command is running.

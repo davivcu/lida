@@ -10,4 +10,14 @@ To run the docker, use the command:
 
 $ sudo docker run -p 5000:5000 flask/lida
 
-To push the container on a shared repository you need to first tag the container using your username on Dockerhub, next login, and finally push. Look on Google for precise instructions.
+To push the container on a shared repository you need to log in first, and next tag the container using your username on Dockerhub, next login, and finally push. Look on Google for precise instructions.
+
+$ docker login
+$ docker build .
+...
+Successfully built f9b912037d84
+$ docker tag f9b912037d84 mastrogeppetto/dockerlida
+$ docker push mastrogeppetto/dockerlida
+
+
+

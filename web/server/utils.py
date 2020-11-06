@@ -43,7 +43,7 @@ def database_uri_compose(server, username, password):
 	if ((server == "localhost") or (server == "127.0.0.1")):
 		databaseURL = "mongodb://"+auth+server
 	else:
-		databaseURL = "mongodb+srv://"+auth+server+"?"+options
+		databaseURL = "mongodb+srv://"+auth+server+"/?"+options
 
 	print(databaseURL)
 	return databaseURL

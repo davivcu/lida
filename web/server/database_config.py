@@ -36,20 +36,19 @@ class DatabaseConfiguration:
 
 	print(" * Connecting to DB")
 
-# 	Leave None if not user is used, 
-#	if username is given a password is required too
-	username = None
-	password = None
+# 	user may be None if not used, 
+#	if username is given a password is required too (otherwise None)
+	username = 'augusto'
+	password = 'qwe111'
 
 #   Can be local or remote, 27017 is default mongoDB port
-	server = "localhost"
-	port = 27017
+	server = "cluster0-wyaud.mongodb.net"
 
 #	You can also replace this with your external database uri
 	databaseURI = utils.database_uri_compose(server,username,password)
 
-	client = MongoClient(databaseURI,port)
-	db = client["lida"]
+	client = MongoClient(databaseURI)
+	db = client["lidadb"]
 
 	print(" * Connected")
 
