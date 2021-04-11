@@ -34,6 +34,7 @@ Vue.component("annotation-app", {
 
         dCurrentTurn: function() {
             temp = utils.get_turn_data(this.dTurns[ this.dCurrentId], this.validAnnotations, this.annotationFormat);
+            console.log(temp);
             return temp;
         },
 
@@ -139,7 +140,8 @@ Vue.component("annotation-app", {
                   this.annotationFormat = response;
                   if (response["status"] == "fail") {
                         mainApp.activeCollection = null;
-                        databaseEventBus.$emit( "assignments_selected");
+                        databaseEventBus.$emit("assignments_selected");
+                        return;
                   }
                   if (this.annotationFormat.global_slot != undefined) {
                     this.globalSlotNonEmpty = this.annotationFormat.global_slot.labels.length;
@@ -328,6 +330,7 @@ Vue.component("annotation-app", {
                      v-bind:globalSlotNonEmpty="globalSlotNonEmpty"
                      v-bind:classifications="dCurrentTurn.multilabel_classification"
                      v-bind:classifications_strings="dCurrentTurn.multilabel_classification_string"
+                     v-bind:groups="dCurrentTurn.groups" 
                      v-bind:currentId="dCurrentId"
                      v-bind:dialogueNonEmpty="dialogueNonEmpty"
                      v-bind:dTurns="dTurns"
@@ -679,8 +682,8 @@ Vue.component('dialogue-turn',{
 * Annotation Component
 ********************************/
 
-Vue.component('annotations',{
-    props : ["globalSlot","classifications", "classifications_strings", "currentId", "dialogueNonEmpty","globalSlotNonEmpty","dTurns", "dialogueId", "readOnly"],
+Vue.component('annotations', {
+    props : ["globalSlot","groups","classifications","classifications_strings","currentId","dialogueNonEmpty","globalSlotNonEmpty","dTurns","dialogueId","readOnly"],
 
     template:
     `
@@ -701,6 +704,13 @@ Vue.component('annotations',{
                                    v-bind:info="classification.info"
                                    v-bind:turn="currentId">
         </classification-annotation>
+        <classification-string-group v-if="dialogueNonEmpty"
+                                    v-bind:groups="groups"
+                                    v-bind:classifications="classifications"
+                                    v-bind:classifications_strings="classifications_strings"
+                                    v-bind:currentId="currentId"
+                                    v-bind:supervision="readOnly">
+        </classification-string-group>
         <classification-string-annotation v-if="dialogueNonEmpty"
                                           v-for="classString in classifications_strings"
                                           v-bind:classification_strings="classString.data"

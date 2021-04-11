@@ -5,7 +5,8 @@
         "annotation_models": [
             "unipi_model.json",
             "lida_model.json",
-            "unipi_model_v2.json"
+            "unipi_model_v2.json",
+            "unipi_model_v3.json"
         ],
         "docker": false
     },

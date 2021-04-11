@@ -180,9 +180,46 @@ Vue.component('classification-annotation',{
     `
 })
 
+Vue.component('classification-string-group', {
+
+    props: ["classes","groups","currentId","supervision","classifications","classifications_strings"],
+
+    data () {
+
+       return {
+
+       }
+
+    },
+
+    created () {
+        console.log(this.classifications);
+        console.log(this.classifications_strings);
+        console.log(this.groups)
+        console.log(this.classes);
+       
+    },
+
+    methods: {
+
+        get_confidence : function (id){
+        
+        }
+
+    
+    },
+
+    template:
+  `
+  <div id="multilabel-string-header">
+    ciaone
+  </div>
+  `
+})
+
 Vue.component('classification-string-annotation', {
 
-      props: ["classification_strings", "uniqueName", "classes", "info", "confidences", "currentId", "multilabelStringOptions", "accepted", "supervision"],
+      props: ["classification_strings","uniqueName","classes","info","confidences","currentId","multilabelStringOptions","accepted","supervision"],
 
       data () {
 
@@ -194,7 +231,8 @@ Vue.component('classification-string-annotation', {
             backup_classification_strings: this.classification_strings,
             slotView: "new",
             selectedLabel: "",
-            filledLabels: []
+            filledLabels: [],
+            groups:[],
          }
 
       },
@@ -204,7 +242,8 @@ Vue.component('classification-string-annotation', {
             adminEventBus.$on("switch_slot_values", this.switchSlotValue);
          } else {
             if ((this.classes.length > 1) && (this.supervision == false) && (this.slotView == "new")){
-               this.collapsed = "new";
+                console.log(this.classes); 
+                this.collapsed = "new";
             }
          }
       },
@@ -229,7 +268,7 @@ Vue.component('classification-string-annotation', {
            },
 
 
-         toggleCollapse: function () {
+          toggleCollapse: function () {
             switch(this.collapsed) {
                 case true:
                     if (this.classes.length > 1) {
@@ -453,8 +492,6 @@ Vue.component('classification-string-annotation', {
          },
 
          resetLabels(label) {
-            console.log(label);
-            console.log(this.classification_strings);
             if (label == "none") {
                 this.directUpdateClassAndString("none","none");
             }

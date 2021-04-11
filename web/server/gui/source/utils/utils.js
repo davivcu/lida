@@ -103,7 +103,8 @@ function get_turn_data(turnData, validAnnotations, annotationStyle){
                     name: key,
                     data: dataToAppend,
                     params: annotationStyle[key]["labels"],
-                    info: annotationStyle[key]["info"]
+                    info: annotationStyle[key]["info"],
+                    group: annotationStyle[key]["group"]
                 })
 
             } else {
@@ -112,9 +113,25 @@ function get_turn_data(turnData, validAnnotations, annotationStyle){
                     name: key,
                     data: dataToAppend,
                     params: annotationStyle[key]["labels"],
-                    info: annotationStyle[key]["info"]
+                    info: annotationStyle[key]["info"],
+                    group: annotationStyle[key]["group"]
                 })
 
+                //form groups
+                if (annotationStyle[key]["group"] != "") {
+                    if (out["groups"] == undefined) {
+                        out["groups"] = {};
+                    }
+                    if (out["groups"][annotationStyle[key]["group"]] == undefined) {
+                        out["groups"][annotationStyle[key]["group"]] = []; 
+                    }    
+                    out["groups"][annotationStyle[key]["group"]].push({
+                        name: key,
+                        data: dataToAppend,
+                        params: annotationStyle[key]["labels"],
+                        info: annotationStyle[key]["info"], 
+                    })
+                }
             }
         }
     }

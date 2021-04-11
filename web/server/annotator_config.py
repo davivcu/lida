@@ -148,11 +148,13 @@ class Configuration(object):
         for key,value in Configuration.configDict[annotation_style].items():
 
             temp = list(value["labels"]) if value.get("labels") else ""
+            group = value["group"] if value.get("group") else ""
 
             out[key] = {
                 "label_type": value["label_type"],
                 "labels": temp,
-                "info": value["description"]
+                "info": value["description"],
+                "group": group
             }
 
         return out
