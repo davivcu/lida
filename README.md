@@ -1,5 +1,12 @@
 ![WLUPER AND UNIPI](images/research_collaboration_matilda.png)   
 
+**Annotation Classes Groups Feature**<br>
+The idea si to implement a group system for multilabel_classifications,
+in order to rationalize the view in the annotation page.
+Work in progress...
+
+<br>
+
 **What's new in MATILDA:** 
 1. Full support for multiple annotators and project management
 2. Full support for multiple annotation models
