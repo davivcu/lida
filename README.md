@@ -1,9 +1,9 @@
 ![WLUPER AND UNIPI](images/research_collaboration_matilda.png)   
 
-**Docker branch:** 
+**Docker branch** <br>
 It only contains the minimal requirements
 to run the container, always up-to-date with the master branch.
-
+<br>
 **What's new in MATILDA:** 
 1. Full support for multiple annotators and project management
 2. Full support for multiple annotation models
