@@ -88,22 +88,17 @@ Vue.component("interannotator-view", {
     clicked_collection(clickedCollection) {
         //load in interannotator all the annotated versions of the same collection
         document.body.style.cursor = "progress";
-        backend.del_all_dialogues_async("admin")
+        backend.admin_import_for_interannotation(clickedCollection)
             .then( (response) => {
+                console.log("===== LOADING ANNOTATED COLLECTIONS FOR",clickedCollection," =====");
                 console.log(response);
-                backend.admin_import_for_interannotation(clickedCollection)
-                    .then( (response) => {
-                        console.log("===== LOADING ANNOTATED COLLECTIONS FOR",clickedCollection," =====");
-                        console.log(response);
-                        document.body.style.cursor = null;
-                        if (response.data.status == "fail") {
-                            alert(guiMessages.selected.admin.importConflictsResult);
-                            return;
-                        } else {
-                          adminEventBus.$emit("conflicts_on_collection", clickedCollection);
-                        }
-                    }
-                );
+                document.body.style.cursor = null;
+                if (response.data.status == "fail") {
+                    alert(guiMessages.selected.admin.importConflictsResult);
+                    return;
+                } else {
+                    adminEventBus.$emit("conflicts_on_collection", clickedCollection);
+                }
             }
         );
     },
@@ -267,24 +262,21 @@ Vue.component("interannotator-app", {
 
     getAllDialogueIdsFromServer() {
         document.body.style.cursor = "progress";
-        backend.get_all_dialogue_ids_async("admin")
+        backend.get_all_dialogue_ids_async("admin", this.displayingCollection)
           .then( (response) => {
               console.log(response);
-              this.allDialogueMetadata = response;
-              backend.get_collection_errors_async(this.displayingCollection)
-                .then( (response) => {
-                    console.log(response);
-                    this.get_dialogues_with_errors(response);
-                    //this.errorList = response.errors
-                    //this.metaDataList = response.meta;
-              });
+              this.allDialogueMetadata = response["metadata"];
+              var errors = response["errorList"];
+              setTimeout(this.get_dialogues_with_errors, 500, errors);
         });
     },
 
     get_dialogues_with_errors(errors) {
+        console.log(errors);
         for (dialogue in errors["errors"]) {
             if (errors["errors"][dialogue].length != 0) {
                 this.dialoguesWithErrors.push({dialogue});
+                console.log(dialogue);
                 document.getElementById(dialogue).setAttribute("class","int-listed-dialogue relevant");
                 document.getElementById(dialogue+"_count").textContent = "Errors: "+errors["errors"][dialogue].length;
             }
